@@ -1,0 +1,452 @@
+%\documentclass[colorlinks=true,urlcolor=blue,a4paper,handout]{beamer}
+%\documentclass{beamer}
+%\documentclass[ignorenonframetext,mathserif]{beamer}
+\documentclass[mathserif]{beamer}
+\usepackage{graphicx}
+
+\usepackage{color}
+\usepackage{latexsym}
+\usepackage{mathtools}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{listings}
+\usepackage{longtable}
+\usepackage{hyperref}
+\usepackage{tabularx}
+\usepackage{array}
+%\usepackage[utf8]{inputenc} 
+\usepackage{verbatim}
+
+%\documentclass[presentation,xcolor=pdftex,dvipsnames,table]{beamer}
+%\documentclass[a4paper,handout,xcolor=pdftex,dvipsnames,table]{beamer}
+%\usetheme{Warsaw}
+%\usetheme{Darmstadt}
+%\usecolortheme{seagull}
+\usefonttheme[onlylarge]{structurebold}
+%\setbeamerfont*{frametitle}{size=\normalsize,series=\bfseries}
+
+\newenvironment{changemargin}[2]{%
+\begin{list}{}{%
+\setlength{\topsep}{0pt}%
+\setlength{\leftmargin}{#1}%
+\setlength{\rightmargin}{#2}%
+\setlength{\listparindent}{\parindent}%
+\setlength{\itemindent}{\parindent}%
+\setlength{\parsep}{\parskip}%
+}%
+\item[]}{\end{list}}
+% Make one image take up the entire slide content area in beamer,.:
+% centered/centred full-screen image, with title:
+% This uses the whole screen except for the 1cm border around it
+% all. 128x96mm
+\newcommand{\titledFrameImage}[2]{
+\begin{frame}{#1}
+%\begin{changemargin}{-1cm}{-1cm}
+\begin{center}
+\includegraphics[width=108mm,height=\textheight,keepaspectratio]{#2}
+\end{center}
+%\end{changemargin}
+\end{frame}
+}
+
+% Make one image take up the entire slide content area in beamer.:
+% centered/centred full-screen image, no title:
+% This uses the whole screen except for the 1cm border around it
+% all. 128x96mm
+\newcommand{\plainFrameImage}[1]{
+\begin{frame}[plain]
+%\begin{changemargin}{-1cm}{-1cm}
+\begin{center}
+\includegraphics[width=108mm,height=76mm,keepaspectratio]{#1}
+\end{center}
+%\end{changemargin}
+\end{frame}
+}
+
+% Make one image take up the entire slide area, including borders, in beamer.:
+% centered/centred full-screen image, no title:
+% This uses the entire whole screen
+\newcommand{\maxFrameImage}[1]{
+\begin{frame}[plain]
+\begin{changemargin}{-1cm}{-1cm}
+\begin{center}
+\includegraphics[width=\paperwidth,height=\paperheight,keepaspectratio]
+{#1}
+\end{center}
+\end{changemargin}
+\end{frame}
+}
+
+\mode<presentation>
+{
+  %\usetheme{Dresden}
+  \setbeamercovered{transparent}
+}
+\setbeamertemplate{footline}[frame number]
+%\setbeamertemplate{navigation symbols}[frame number]
+ 
+\usepackage[utf8]{inputenc}
+%\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+\usepackage{xspace}
+
+%\usepackage[colorlinks=true,urlcolor=blue]{hyperref}
+
+\usepackage{Sweave}
+\setkeys{Gin}{width=0.95\textwidth}
+
+\newcommand{\code}[1]{\texttt{\small #1}}
+\newcommand{\strong}[1]{{\normalfont\fontseries{b}\selectfont #1}}
+\definecolor{dark-green}{rgb}{0,0.45,0}
+\definecolor{dark-red}{rgb}{0.85,0.0,0}
+\definecolor{gg}{rgb}{0.5,0.5.0,0}
+\let\pkg=\strong
+\def\RR{\textsf{R}\xspace}
+\def\SP{\texttt{S-PLUS}\xspace}
+\def\SS{\texttt{S}\xspace}
+\def\SIII{\texttt{S3}\xspace}
+\def\SIV{\texttt{S4}\xspace}
+
+\renewcommand{\a}{\rightarrow}
+
+\newcommand{\email}[1]{\href{mailto:#1}{\normalfont\texttt{#1}}}
+
+%\date{29 June 2010}
+\title{ Statistics for spatio-temporal data:\\ an introduction }
+
+%\SweaveOpts{echo=TRUE,eval=TRUE,width=7,height=5}
+
+\author{Edzer Pebesma}
+\date{ Geostat Summer School, Bergen, 15-21 Jun 2014}
+
+\institute[University of M\"unster]
+{
+\vspace{.7cm}\\ \includegraphics[width=5cm]{ifgi-logo_int} 
+}
+
+<<label=afig,echo=FALSE,eval=FALSE>>=
+.PngNo <- .PngNo + 1; file <- paste("Fig-", .PngNo, ".pdf", sep="")
+pdf(file=file, width = 4.5, height = 4.75, pointsize = 8)
+opar <- par(no.readonly = TRUE)
+par(mar=c(4,4,2,1)+0.1)
+@
+
+<<label=zfig,echo=FALSE,eval=FALSE>>=
+par(opar)
+dev.null <- dev.off()
+cat("\\includegraphics[width=0.95\\textwidth]{", file, "}\n\n", sep="")
+@
+
+\begin{document} 
+
+\begin{frame}
+  \titlepage
+\end{frame}
+
+\maxFrameImage{stevens.png}
+\maxFrameImage{hand.png}
+\maxFrameImage{chrisman.png}
+\maxFrameImage{kuhn.png}
+\maxFrameImage{mip.png}
+\maxFrameImage{intro.png}
+
+<<echo=FALSE>>=
+options("StartupBanner"="off")
+rm(list=ls())
+.owidth <- getOption("width")
+options("width"=36)
+.PngNo <- 0
+@
+\frame{\frametitle{All data are spatio-temporal}
+1. There are no pure-spatial data. Maps reflect either
+\begin{itemize}
+\item a snapshot in time (remote sensing image)
+\item an aggregate over a time period (e.g., interpolated {\em yearly average} temperature, or yearly aggregated daily interpolations)
+\item something that is constant over a period of time (political boundary)
+\item a seemingly non-changing phenomenon (geology)
+\end{itemize}
+2. There are no pure-temporal data. Time series reflect either
+\begin{itemize}
+\item spatially aggregated values (global temperature curves)
+\item a single spatial location (air quality sensor {\tt DEUB032},
+at 8.191934E,50.93033N)
+\item vaguely located, or universal aggregates (world market prices, 
+stock quotes)
+\end{itemize}
+}
+
+\frame{\frametitle{Functions}
+We can write function $y = f(x)$ as:
+$$f: X \a Y$$
+which means that for {\em any} $X$, we have a corresponding $Y$. \pause
+$$X \times Y$$ is the {\em Carthesian product}, the collection of all
+ordered pairs $(x,y)$ \pause
+
+(Wikipedia): ``A function $f$ from $X$ to $Y$ is a {\color{red}subset of the
+Cartesian product $X \times Y$} subject to the following condition:
+every element of $X$ is the first component of one and only one
+ordered pair in the subset.  In other words, for every $x$ in $X$
+there is exactly one element $y$ such that the ordered pair $(x, y)$
+is contained in the subset defining the function $f$.'' \pause
+
+$X$ is called the {\em\color{red} domain}, $Y$ the {\em codomain}
+or {\em\color{red}range}
+}
+
+\frame{\frametitle{Inverse functions}
+for a set of values $B$ in the range,
+$$f^{-1}(B) = {x \in X: f(x) \in B}$$
+
+for a single value $b$ in the range,
+$$ f^{-1}(b) = {x \in X: f(x) = b}$$
+the resulting {\color{red} set} may contain any number of elements.
+
+Example: $f: X \a X^2$, the range ($Y$) value 4 has corresponding
+domain values $\{-2, 2\}$.
+}
+
+\frame[containsverbatim]{\frametitle{Reference systems}
+Reference systems are {\em conventions} that encode the shared
+understanding of information. Examples are
+\begin{itemize}
+\item spatial (coordinate) reference systems (where is (52,8)?)
+\item temporal reference systems (what does
+<<>>=
+Sys.time()
+@
+mean? 
+\item attribute reference systems (e.g., UCUM, Unified Code for Units of Measure)
+\item semantic reference systems (vocabularies, ontologies, R function index)
+\end{itemize}
+}
+
+\frame{\frametitle{Space, Time, Attribute, Identity}
+
+We will look at the following four reference system {\em domains}:
+
+\begin{tabular}{llp{7cm}}
+{\color{red}$S$} & space &  1,2,3-dimensional, e.g. 2D degrees in WGS84, $\mathbb{R}^2$ or
+$\mathbb{R}^3$, continuous \\
+{\color{red}$T$} & time & 1-dimensional or cyclic, $\mathbb{R}$, sometimes 2-dimensional,
+continuous \\
+{\color{red}$Q$} & quality & 1-dimensional (UCUM), higher-dimensional: functional, multivariate,
+also possibly nominal, ordinal, interval (Stevens' 1946) \\
+{\color{red}$D$} & discrete & indicating distinct entities (objects, events); $\mathbb{N}$,
+IDs, primary key in RDBMS, row number in {\tt data.frame}
+\end{tabular}
+}
+
+\frame{\frametitle{ Fields }
+functional form:
+$$(S \times T) \a Q$$
+\begin{itemize}
+\item Answers: ``what is then and there?''
+\item Inverting answers: ``when/where was that?''
+\item Specialisations: $S \a Q$, $T \a Q$
+\item Incarnations: points (sampled field: meuse), contour lines, coverage
+\end{itemize}
+}
+
+\begin{frame}[fragile, plain]{Field examples: grid, points}
+\begin{columns}
+\begin{column}{6cm}
+<<fig=TRUE,echo=FALSE>>=
+library(sp)
+data("meuse")
+coordinates(meuse) <- ~x+y
+data("meuse.grid")
+coordinates(meuse.grid) <- ~x+y
+gridded(meuse.grid) <- TRUE
+library(gstat)
+x = idw(log(zinc)~1,meuse,meuse.grid,debug.level=0)[1]
+print(spplot(x, col.regions=bpy.colors(), main = "log(zinc, ppm), interpolated"))
+@
+\end{column}
+\begin{column}{6cm}
+<<fig=TRUE,echo=FALSE>>=
+print(spplot(meuse["zinc"], col.regions=bpy.colors(), main = "zinc (ppm)"))
+@
+\end{column}
+\end{columns}
+\end{frame}
+
+\begin{frame}[fragile, plain]{Field examples: lines, polygons}
+\begin{columns}
+\begin{column}{6cm}
+<<fig=TRUE,echo=FALSE>>=
+library(lattice)
+print(contourplot(z~x+y,spmap.to.lev(x, 1),
+	scales = list(draw = FALSE), asp="iso"))
+@
+\end{column}
+\begin{column}{6cm}
+<<fig=TRUE,echo=FALSE>>=
+i = cut(x$var1.pred, c(4,4.5,5,5.5,6,6.5,7,7.5,8), include.lowest = TRUE)
+xa = aggregate(x["var1.pred"], list(i=i))
+print(spplot(xa[1],col.regions=bpy.colors(8)))
+@
+\end{column}
+\end{columns}
+\end{frame}
+
+\titledFrameImage{Field: categorical coverage}{lu}
+
+\titledFrameImage{Non-Field: choropleth, aggregation}{choro}
+
+\frame{\frametitle{Non-moving Entities (objects, events)}
+functional form:
+$$D \a (S \times T \times Q)$$
+(for objects without properties, take $Q \equiv 1$)
+\begin{itemize}
+\item Specialisations: 
+ \begin{itemize}
+ \item $D \a (S \times Q)$: spatial point pattern, 
+ \item $D \a (T \times Q)$: temporal point pattern
+ \end{itemize}
+\end{itemize}
+}
+
+\frame{\frametitle{Moving entities (objects, events)}
+functional form:
+$$D \a T \a (S \times Q)$$
+(for objects without properties, take $Q \equiv 1$)
+\begin{itemize}
+\item generalization of $D \a (S \times T \times Q)$
+\item specialisations: $D \a T \a Q$, $D \a S \a Q$
+\end{itemize}
+}
+
+\frame{\frametitle{Support and aggregation}
+\begin{enumerate}
+\item we cannot make observations of zero duration, or
+zero spatial size; the actual size and duration are the
+measurement {\em support} (footprint). Think: soil samples,
+RS cells.
+\item often, we want to estimate or compute {\em aggregated}
+values, e.g. over periods over areas.
+\item even more often, the data we get were aggregated,
+for convenience (size), or privacy concerns (health data).
+\end{enumerate}
+}
+
+\maxFrameImage{eea1.png}
+\titledFrameImage{Particulate matter time series, averaged over station type}{eea2.png}
+
+\frame{\frametitle{More complications ...}
+\begin{itemize}
+\item ``intermediate'' phenomena: air quality in street canions (``traffic'')
+\item true ``hybrid'', 1: time events, spatial fields
+ \begin{itemize}
+ \item $D \a ((S \a Q) \times T)$
+ \item example: election maps
+ \end{itemize}
+\item true ``hybrid'', 2: spatial events, time fields
+ \begin{itemize}
+ \item $D \a (S \times (T \a Q))$
+ \item example: emission from power plants
+ \end{itemize}
+\end{itemize}
+}
+
+\frame{\frametitle{How to represent, and then store fields?}
+\begin{enumerate}
+\item as functions! Interpolation functions return values at {\color{red}arbitrary}
+times, moments ({\tt gstat::idw} in space, {\tt zoo::na.approx} in time)
+\item as evaluated (or observed) functions, at 
+ \begin{itemize}
+ \item discretized space, regular {\tt raster::raster} or irregular {\tt sp::SpatialPoints}, or
+ \item time, regular: {\tt stats::ts}, or irregular: {\tt zoo::zoo}, {\tt xts::xts}
+ \end{itemize}
+\item natural would be to use an index that relates to space and/or time, and records with
+arbitrarily typed fields $\a$ {\em arrays}
+\item {\tt netcdf, HDF5}; 
+\item R: array (and raster?) do not support fields of mixed type
+\item R for time: zoo, xts do not support fields of mixed type
+\item R for space: {\tt sp::SpatialGridDataFrame} do
+\item R for space/time: spacetime does too,
+\item big data array processing engine: SciDB
+\end{enumerate}
+}
+
+\frame{\frametitle{How to store objects/events?}
+Tables are one-dimensional arrays; The {\tt Spatial*} objects
+in {\tt sp} ``behave'' like tables ({\tt data.frame}).
+
+Subsetting like {\tt x[3,"zinc"]} works for all, except for {\tt
+SpatialGridDataFrame}.
+
+}
+
+\begin{frame}[fragile,plain]{I will assume you understand this:}
+\begin{columns}
+\begin{column}{6cm}
+
+\begin{tiny}
+<<keep.source=TRUE>>=
+a = data.frame(varA = c(1,1.5,2), 
+	varB = c("a", "a", "b"))
+a[1,]
+a[1, drop=FALSE]
+a[,1]
+a[1]
+a[[1]]
+@
+\end{tiny}
+
+\end{column}
+\begin{column}{6cm}
+\begin{tiny}
+<<>>= 
+a["varA"]
+a[c("varA", "varB")]
+a$varA
+a$varA <- 3:1
+a
+@
+\end{tiny}
+\end{column}
+\end{columns}
+\end{frame}
+
+\frame{\frametitle{Functional programming}
+\begin{itemize}
+\item do it: learn {\tt apply}, {\tt lapply}, {\tt do.call},
+\item program generically, e.g.  {\tt aggregate}
+\end{itemize}
+}
+
+\frame{\frametitle{Time, Time Series Data}
+\begin{enumerate}
+\item {\tt POSIXt}, {\tt Date}, {\tt yearmon}, {\tt yearqtr}
+\item {\tt zoo}, {\tt xts}, {\tt ?aggregate}
+\item {\tt forecast}, ...
+\item see Task View
+\end{enumerate}
+}
+
+\frame{\frametitle{Space, Spatial Data}
+\begin{enumerate}
+\item {\tt Spatial*}, {\tt raster},
+\item {\tt rgdal}, {\tt rgeos}
+\item see Task View
+\item selecting records, variables
+\item selecting based on spatial match
+\item {\tt sp::aggregate}
+\item {\tt vignette("over")} (or see CRAN page)
+\item {\tt edit(vignette("over"))}, run, modify, run
+\end{enumerate}
+}
+
+\frame{\frametitle{Space-time, Spatiotemporal Data}
+\begin{enumerate}
+\item {\tt spacetime}, {\tt ST*}, also {\tt raster},
+\item back ends: PostGIS, TGRASS, SciDB
+\item combines {\tt sp} and {\tt xts}
+\item selection, aggregation
+\item go through {\tt spacetime} vignettes
+\item see Task View
+\end{enumerate}
+}
+
+\end{document}
+

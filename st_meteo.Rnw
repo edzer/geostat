@@ -1,0 +1,714 @@
+%\documentclass[colorlinks=true,urlcolor=blue,a4paper,handout]{beamer}
+%\documentclass{beamer}
+%\documentclass[ignorenonframetext,mathserif]{beamer}
+\documentclass[mathserif]{beamer}
+\usepackage{graphicx}
+\usepackage{alltt}
+
+\usepackage{color}
+\usepackage{latexsym}
+\usepackage{mathtools}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{listings}
+\usepackage{longtable}
+\usepackage{hyperref}
+\usepackage{tabularx}
+\usepackage{array}
+%\usepackage[utf8]{inputenc} 
+\usepackage{verbatim}
+
+%\documentclass[presentation,xcolor=pdftex,dvipsnames,table]{beamer}
+%\documentclass[a4paper,handout,xcolor=pdftex,dvipsnames,table]{beamer}
+%\usetheme{Warsaw}
+%\usetheme{Darmstadt}
+%\usecolortheme{seagull}
+\usefonttheme[onlylarge]{structurebold}
+%\setbeamerfont*{frametitle}{size=\normalsize,series=\bfseries}
+
+\newenvironment{changemargin}[2]{%
+\begin{list}{}{%
+\setlength{\topsep}{0pt}%
+\setlength{\leftmargin}{#1}%
+\setlength{\rightmargin}{#2}%
+\setlength{\listparindent}{\parindent}%
+\setlength{\itemindent}{\parindent}%
+\setlength{\parsep}{\parskip}%
+}%
+\item[]}{\end{list}}
+% Make one image take up the entire slide content area in beamer,.:
+% centered/centred full-screen image, with title:
+% This uses the whole screen except for the 1cm border around it
+% all. 128x96mm
+\newcommand{\titledFrameImage}[2]{
+\begin{frame}{#1}
+%\begin{changemargin}{-1cm}{-1cm}
+\begin{center}
+\includegraphics[width=108mm,height=\textheight,keepaspectratio]{#2}
+\end{center}
+%\end{changemargin}
+\end{frame}
+}
+
+% Make one image take up the entire slide content area in beamer.:
+% centered/centred full-screen image, no title:
+% This uses the whole screen except for the 1cm border around it
+% all. 128x96mm
+\newcommand{\plainFrameImage}[1]{
+\begin{frame}[plain]
+%\begin{changemargin}{-1cm}{-1cm}
+\begin{center}
+\includegraphics[width=108mm,height=76mm,keepaspectratio]{#1}
+\end{center}
+%\end{changemargin}
+\end{frame}
+}
+
+% Make one image take up the entire slide area, including borders, in beamer.:
+% centered/centred full-screen image, no title:
+% This uses the entire whole screen
+\newcommand{\maxFrameImage}[1]{
+\begin{frame}[plain]
+\begin{changemargin}{-1cm}{-1cm}
+\begin{center}
+\includegraphics[width=\paperwidth,height=\paperheight,keepaspectratio]
+{#1}
+\end{center}
+\end{changemargin}
+\end{frame}
+}
+
+\mode<presentation>
+{
+  %\usetheme{Dresden}
+  \setbeamercovered{transparent}
+}
+\setbeamertemplate{footline}[frame number]
+%\setbeamertemplate{navigation symbols}[frame number]
+ 
+\usepackage[utf8]{inputenc}
+%\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+\usepackage{xspace}
+
+%\usepackage[colorlinks=true,urlcolor=blue]{hyperref}
+
+\usepackage{Sweave}
+\setkeys{Gin}{width=0.95\textwidth}
+
+\newcommand{\code}[1]{\texttt{\small #1}}
+\newcommand{\strong}[1]{{\normalfont\fontseries{b}\selectfont #1}}
+\definecolor{dark-green}{rgb}{0,0.45,0}
+\definecolor{dark-red}{rgb}{0.85,0.0,0}
+\definecolor{gg}{rgb}{0.5,0.5.0,0}
+\let\pkg=\strong
+\def\RR{\textsf{R}\xspace}
+\def\SP{\texttt{S-PLUS}\xspace}
+\def\SS{\texttt{S}\xspace}
+\def\SIII{\texttt{S3}\xspace}
+\def\SIV{\texttt{S4}\xspace}
+
+\renewcommand{\a}{\rightarrow}
+
+\newcommand{\email}[1]{\href{mailto:#1}{\normalfont\texttt{#1}}}
+
+%\date{29 June 2010}
+\title{Spatial and spatio-temporal data in \includegraphics[width=.1\columnwidth]{Rlogo}}
+
+%\SweaveOpts{echo=TRUE,eval=TRUE,width=7,height=5}
+
+\author{
+%\vspace{.7cm}\\ 
+\includegraphics[width=4cm]{ifgi-logo_int} \\
+\vspace{.7cm}
+Edzer Pebesma}
+\date{ DailyMeteo, Belgrade, 24-27 Jun 2014\\
+\begin{small}
+\url{http://ifgi.uni-muenster.de/~epebe_01/R/}
+\end{small} }
+
+%\institute[University of M\"unster]
+%{
+%\vspace{.7cm}\\ \includegraphics[width=5cm]{ifgi-logo_int} 
+%}
+
+<<label=afig,echo=FALSE,eval=FALSE>>=
+.PngNo <- .PngNo + 1; file <- paste("Fig-", .PngNo, ".pdf", sep="")
+pdf(file=file, width = 4.5, height = 4.75, pointsize = 8)
+opar <- par(no.readonly = TRUE)
+par(mar=c(4,4,2,1)+0.1)
+@
+
+<<label=zfig,echo=FALSE,eval=FALSE>>=
+par(opar)
+dev.null <- dev.off()
+cat("\\includegraphics[width=0.95\\textwidth]{", file, "}\n\n", sep="")
+@
+
+\begin{document} 
+
+\begin{frame}
+  \titlepage
+\end{frame}
+
+<<echo=FALSE>>=
+options("StartupBanner"="off")
+rm(list=ls())
+.owidth <- getOption("width")
+options("width"=70)
+.PngNo <- 0
+@
+
+\frame{\frametitle{Overview}
+\begin{enumerate}
+\item vector, matrix, array; lists, data.frame
+\item selection on data.frame
+\item spatial classes
+\item selection on spatial objects
+\item aggregation, in general
+\item aggregation on spatial classes
+\item spatio-temporal classes
+\item selection, overlay, aggregation on spatio-temporal objects
+\end{enumerate}
+}
+
+\frame{\frametitle{All data are spatio-temporal}
+1. There are no pure-spatial data. Maps reflect either
+\begin{itemize}
+\item a snapshot in time (remote sensing image)
+\item an aggregate over a time period (e.g., interpolated {\em yearly average} temperature, or yearly aggregated daily interpolations)
+\item something that is constant over a period of time (political boundary)
+\item a seemingly non-changing phenomenon (geology)
+\end{itemize}
+2. There are no pure-temporal data. Time series reflect either
+\begin{itemize}
+\item spatially aggregated values (global temperature curves)
+\item a single spatial location (air quality sensor {\tt DEUB032},
+at 8.191934E,50.93033N)
+\item vaguely located, or universal aggregates (world market prices, 
+stock quotes)
+\end{itemize}
+}
+
+\frame[containsverbatim]{\frametitle{Vector, matrix, array}
+\begin{columns}
+\begin{column}{6cm}
+\begin{footnotesize}
+<<>>=
+a = vector(3, mode = "numeric")
+a
+length(a)
+@
+or simply by initialisation
+<<>>=
+c = 1:3
+c
+typeof(c)
+d = 1.5:3.5
+d
+typeof(c)
+@
+\end{footnotesize}
+\end{column}
+\begin{column}{6cm}
+\begin{footnotesize}
+<<>>=
+m = matrix(rnorm(6), 2, 3)
+print(m, digits=3)
+dim(m)
+a = array(1:(5*7*9), c(5,7,9))
+dim(a)
+@
+\end{footnotesize}
+\end{column}
+\end{columns}
+}
+
+\frame[containsverbatim]{\frametitle{lists, data.frame}
+\begin{columns}
+\begin{column}{6cm}
+Lists can contain anything:
+\begin{footnotesize}
+<<>>=
+a = list(1:3, x = c("foo", "bar"), c(TRUE, FALSE))
+a
+a[1]
+a[[1]]
+a$x
+@
+\end{footnotesize}
+\end{column}
+
+\begin{column}{6cm}
+{\tt data.frame} is a column store, but mimics records of mixed type
+\begin{footnotesize}
+<<>>=
+a[[1]] = 1:2
+b = as.data.frame(a)
+names(b) = c("NR", "what", "cond")
+b
+is.list(b)
+@
+\end{footnotesize}
+\end{column}
+\end{columns}
+}
+
+\frame[containsverbatim]{\frametitle{Selection on data.frame}
+\begin{columns}
+\begin{column}{6cm}
+\begin{footnotesize}
+<<>>=
+b
+b[[1]]
+b[["NR"]]
+b$NR
+b[1]
+@
+\end{footnotesize}
+\end{column}
+
+\begin{column}{6cm}
+\begin{footnotesize}
+<<>>=
+b[1,]
+b[,1:2]
+b[,1]
+b[,1,drop=FALSE]
+@
+\end{footnotesize}
+\end{column}
+\end{columns}
+}
+
+\frame[containsverbatim]{\frametitle{Deletion, negative selection, replacement}
+\begin{columns}
+\begin{column}{6cm}
+\begin{footnotesize}
+<<>>=
+b
+b$NR = NULL
+b
+b[-1,]
+@
+\end{footnotesize}
+\end{column}
+
+\begin{column}{6cm}
+\begin{footnotesize}
+<<>>=
+b$cond2 = ! b$cond
+b
+b[1,1] = NA
+b
+class(b$what)
+b$what
+as.numeric(b$what)
+@
+\end{footnotesize}
+\end{column}
+\end{columns}
+}
+
+\frame[containsverbatim]{\frametitle{Spatial classes (sp)}
+Class {\tt Spatial} provides a coordinate reference system and a
+bounding box.
+
+\begin{itemize}
+\item Objects deriving from {\tt Spatial} consist of a geometry:
+  \begin{itemize}
+  \item {\tt SpatialPoints}
+  \item {\tt SpatialLines}
+  \item {\tt SpatialPolygons}
+  \item {\tt SpatialPixels}
+  \item {\tt SpatialGrid}
+  \end{itemize}
+\item from these, {\tt Spatial*DataFrame} objects derive, and have attributes
+(a {\tt data} slot, of class {\tt data.frame})
+\end{itemize}
+\begin{footnotesize}
+<<>>=
+library(sp)
+library(rgdal)
+p = SpatialPoints(cbind(lon = 8, lat = 52), CRS("+init=epsg:4326"))
+p
+@
+\end{footnotesize}
+}
+
+\frame[containsverbatim]{\frametitle{Meuse data set}
+\begin{columns}
+\begin{column}{6cm}
+\begin{footnotesize}
+<<>>=
+library(sp)
+data("meuse")
+coordinates(meuse) <- ~x+y
+spplot(meuse["zinc"], 
+	col.regions = bpy.colors())
+@
+\end{footnotesize}
+\end{column}
+\begin{column}{6cm}
+<<fig=TRUE,echo=FALSE>>=
+print(
+spplot(meuse["zinc"], 
+	col.regions = bpy.colors())
+)
+@
+\end{column}
+\end{columns}
+}
+
+\frame[containsverbatim]{\frametitle{Getting spatial data in R}
+Usually, we don't create spatial objects from scratch, but from
+external files ({\tt readGDAL}, {\tt readOGR}), or from {\tt data.frame}
+objects:
+\begin{footnotesize}
+<<>>=
+library(sp)
+data(meuse)
+class(meuse)
+dim(meuse)
+names(meuse)[1:6]
+coordinates(meuse) = c("x", "y") 
+# which is short for:
+data(meuse)
+pts = SpatialPoints(meuse[c("x", "y")])
+m = SpatialPointsDataFrame(pts, meuse)
+class(m)
+@
+\end{footnotesize}
+}
+
+\frame[containsverbatim]{\frametitle{Selection on spatial objects}
+Selecting the {\tt data.frame} metaphor:
+\begin{itemize}
+\item selection of records (features), attributes (columns):
+\begin{footnotesize}
+<<>>=
+meuse[1:3,1:6]
+@
+\end{footnotesize}
+\item extraction of variables:
+\begin{footnotesize}
+<<>>=
+meuse$zinc[1:3]
+@
+\end{footnotesize}
+\item replacement:
+\begin{footnotesize}
+<<>>=
+meuse$zinc[1:2] = NA
+meuse[1:3,1:6]
+@
+\end{footnotesize}
+\end{itemize}
+}
+
+\frame[containsverbatim]{\frametitle{Aggregation, in general}
+\begin{footnotesize}
+<<>>=
+d = data.frame(x = 1:6, grp1 = c(rep("A",3), rep("B",3)))
+d$grp2 = rep(c("P","Q","R"), each = 2)
+d
+aggregate(d[1], list(d$grp1), mean)
+aggregate(d[1], list(d$grp1, d$grp2), mean)
+@
+\end{footnotesize}
+}
+\frame[containsverbatim]{\frametitle{Aggregation, needs:}
+\begin{alltt}
+## S3 method for class 'data.frame'
+aggregate(x, by, FUN, ..., simplify = TRUE)
+\end{alltt}
+\begin{itemize}
+\item an object to aggregate ({\tt x})
+\item an aggregation predicate ({\tt by})
+\item an aggregation function ({\tt FUN})
+\end{itemize}
+NOTE that 
+\begin{itemize}
+\item we pass functions as arguments $\a$ R is a functional programming language
+\item we can write our own function, and pass it to {\tt FUN}
+\item {\tt ...} is passed on to this function
+\end{itemize}
+}
+
+\frame[containsverbatim]{\frametitle{Aggregation of spatial classes}
+\begin{columns}
+\begin{column}{6cm}
+\begin{footnotesize}
+<<>>=
+library(sp)
+data("meuse")
+coordinates(meuse) <- ~x+y
+offset = c(178460, 329620)+20
+gt = GridTopology(offset, c(400,400), 
+	c(8,11))
+SG = SpatialGrid(gt)
+agg = aggregate(meuse["zinc"], SG)
+spplot(agg["zinc"], 
+	col.regions=bpy.colors(),
+	sp.layout = list("sp.points", 
+	meuse, col=3))
+@
+\end{footnotesize}
+\end{column}
+\begin{column}{6cm}
+<<fig=TRUE,echo=FALSE>>=
+print(
+spplot(agg["zinc"], 
+	col.regions=bpy.colors(),
+	sp.layout = list("sp.points", 
+	meuse, col=3))
+)
+@
+\end{column}
+\end{columns}
+}
+
+\begin{frame}[fragile, plain]{Aggregating interpolated values}
+\begin{columns}
+\begin{column}{6cm}
+\begin{footnotesize}
+<<>>=
+library(sp)
+data("meuse")
+coordinates(meuse) <- ~x+y
+data("meuse.grid")
+coordinates(meuse.grid) <- ~x+y
+gridded(meuse.grid) <- TRUE
+library(gstat)
+x = idw(log(zinc)~1, meuse,
+  meuse.grid, debug.level=0)[1]
+spplot(x[1],col.regions=bpy.colors())
+@
+\end{footnotesize}
+\end{column}
+\begin{column}{6cm}
+<<fig=TRUE,echo=FALSE>>=
+print(spplot(x[1],col.regions=bpy.colors()))
+@
+\end{column}
+\end{columns}
+\end{frame}
+
+\frame[containsverbatim]{\frametitle{Aggregating interpolated values, spatially}
+\begin{columns}
+\begin{column}{6cm}
+\begin{footnotesize}
+<<>>=
+agg = aggregate(x["var1.pred"], SG)
+spplot(agg, col.regions=bpy.colors(),
+	sp.layout = list("sp.points", 
+	meuse.grid, col=grey(.5), cex=.5))
+@
+\end{footnotesize}
+\end{column}
+\begin{column}{6cm}
+<<fig=TRUE,echo=FALSE>>=
+print(
+spplot(agg,
+	col.regions=bpy.colors(),
+	sp.layout = list("sp.points", 
+	meuse.grid, col=grey(.5), cex=.5))
+)
+@
+\end{column}
+\end{columns}
+NOTE: the aggregation predicate ({\tt SG}) can be of any type:
+points, lines, polygons, grid.
+}
+
+
+\begin{frame}[fragile, plain]{Aggregating by attribute value}
+\begin{columns}
+\begin{column}{6cm}
+\begin{footnotesize}
+<<>>=
+i = cut(x$var1.pred, seq(4, 8, by=.5), 
+	include.lowest = TRUE)
+xa = aggregate(x["var1.pred"], 
+	list(i=i))
+spplot(xa[1],col.regions=bpy.colors(8))
+@
+\end{footnotesize}
+\end{column}
+\begin{column}{6cm}
+<<fig=TRUE,echo=FALSE>>=
+print(spplot(xa[1],col.regions=bpy.colors(8)))
+@
+\end{column}
+\end{columns}
+(NOTE: this is still in sp on r-forge, not on CRAN)
+\end{frame}
+
+\frame[containsverbatim]{\frametitle{Spatio-temporal classes}
+Package {\tt spacetime} tries to combine all cleverness of spatial
+data in {\tt sp}, of temporal data in {\tt zoo} and {\tt xts}, and
+then add some. It mainly solves:
+\begin{itemize}
+\item object creation (e.g. from tables, sp and/or xts objects),
+\item some I/O (RasterStack with time z; TGRASS, PostGIS)
+\item selection (space, time, attributes)
+\item aggregation (over space, over time, over space-time)
+\item plotting
+\end{itemize}
+}
+
+\frame[containsverbatim]{\frametitle{meteo: precipitation and stations}
+\begin{footnotesize}
+<<>>=
+library(meteo)
+data(dprec); head(dprec, 2)
+data(stations); head(stations, 2)
+mtch = match(dprec$staid, stations$staid)
+dprec = data.frame(dprec, stations[mtch, c("lon", "lat")])
+head(dprec, 2)
+@
+\end{footnotesize}
+}
+
+\frame[containsverbatim]{\frametitle{meteo: precipitation and stations}
+\begin{footnotesize}
+<<>>=
+library(spacetime)
+m = stConstruct(dprec, c("lon", "lat"), "time")
+	#, crs = CRS("+init=epsg:4326"))
+m2 = as(m, "STFDF")
+summary(m2[,,"prec"])
+@
+\end{footnotesize}
+}
+
+\frame[containsverbatim]{\frametitle{plot: map-panel}
+\begin{columns}
+\begin{column}{6cm}
+\begin{footnotesize}
+<<>>=
+data(NLpol) # in meteo!
+proj4string(m2) = proj4string(NLpol)
+m2.NL = m2[NLpol,]
+stplot(m2.NL[,,"prec"],
+	col.regions = bpy.colors())
+@
+\end{footnotesize}
+\end{column}
+\begin{column}{6cm}
+<<fig=TRUE,echo=FALSE>>=
+print(
+stplot(m2.NL[,,"prec"],col.regions=bpy.colors())
+)
+@
+\end{column}
+\end{columns}
+}
+
+\frame[containsverbatim]{\frametitle{xt: space-time (Hovm\"{o}ller)}
+\begin{columns}
+\begin{column}{6cm}
+\begin{footnotesize}
+<<>>=
+proj4string(m2) = proj4string(NLpol)
+m2.NL = m2[NLpol,]
+stplot(m2.NL[1:100,,"prec"],
+	col.regions=bpy.colors(),
+	mode="xt")
+@
+\end{footnotesize}
+\end{column}
+\begin{column}{6cm}
+<<fig=TRUE,echo=FALSE>>=
+print(
+stplot(m2.NL[1:100,,"prec"],col.regions=bpy.colors(),mode="xt")
+)
+@
+\end{column}
+\end{columns}
+}
+
+\frame[containsverbatim]{\frametitle{ts: time series}
+\begin{columns}
+\begin{column}{6cm}
+\begin{footnotesize}
+<<>>=
+proj4string(m2) = proj4string(NLpol)
+m2.NL = m2[NLpol,]
+stplot(m2.NL[120:140,,"prec"],
+	mode="ts")
+@
+\end{footnotesize}
+\end{column}
+\begin{column}{6cm}
+<<fig=TRUE,echo=FALSE>>=
+print(
+stplot(m2.NL[120:140,,"prec"],col.regions=bpy.colors(),mode="ts")
+)
+@
+\end{column}
+\end{columns}
+}
+
+\frame[containsverbatim]{\frametitle{time-panel}
+\begin{columns}
+\begin{column}{6cm}
+\begin{footnotesize}
+<<>>=
+proj4string(m2) = proj4string(NLpol)
+m2.NL = m2[NLpol,]
+stplot(m2.NL[120:140,,"prec"],
+	mode="tp")
+@
+\end{footnotesize}
+\end{column}
+\begin{column}{6cm}
+<<fig=TRUE,echo=FALSE>>=
+print(
+stplot(m2.NL[120:140,,"prec"], mode="tp")
+)
+@
+\end{column}
+\end{columns}
+}
+
+\frame[containsverbatim]{\frametitle{Aggregation on spatio-temporal objects}
+\begin{columns}
+\begin{column}{6cm}
+\begin{footnotesize}
+<<>>=
+m2.agg = aggregate(m2.NL[,,"prec"], 
+	"5 days", sum)
+stplot(m2.agg[,,"prec"],
+	col.regions=bpy.colors())
+@
+\end{footnotesize}
+\end{column}
+\begin{column}{6cm}
+<<fig=TRUE,echo=FALSE>>=
+print(stplot(m2.agg[,,"prec"],col.regions=bpy.colors()))
+@
+\end{column}
+\end{columns}
+}
+
+\frame[containsverbatim]{\frametitle{Aggregation on spatio-temporal objects}
+\begin{columns}
+\begin{column}{6cm}
+\begin{footnotesize}
+<<>>=
+m2.aggNL = aggregate(m2.NL[,,"prec"], 
+	NLpol, mean, na.rm=TRUE)
+plot(m2.aggNL)
+@
+\end{footnotesize}
+\end{column}
+\begin{column}{6cm}
+<<fig=TRUE,echo=FALSE>>=
+plot(m2.aggNL)
+@
+\end{column}
+\end{columns}
+}
+
+\end{document}

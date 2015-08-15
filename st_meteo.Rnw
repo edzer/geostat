@@ -574,8 +574,8 @@ head(dprec, 2)
 \begin{footnotesize}
 <<>>=
 library(spacetime)
-m = stConstruct(dprec, c("lon", "lat"), "time")
-	#, crs = CRS("+init=epsg:4326"))
+m = stConstruct(dprec, c("lon", "lat"), "time"
+	, crs = CRS("+init=epsg:4326"))
 m2 = as(m, "STFDF")
 summary(m2[,,"prec"])
 @

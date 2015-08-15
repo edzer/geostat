@@ -1,0 +1,95 @@
+# Time, Space, Spacetime in R
+
+Geostat-course 2015, Lancaster, summer school slides
+
+\(
+\newcommand{\E}{{\rm E}}       % E expectation operator
+\newcommand{\Var}{{\rm Var}}   % Var variance operator
+\newcommand{\Cov}{{\rm Cov}}   % Cov covariance operator
+\newcommand{\Cor}{{\rm Corr}}
+\)
+
+## Data in R
+Data in R are often organized in vectors,
+```{r}
+a = c(15, 20, 30)
+a
+b = c("blue", "brown", "blue")
+b
+```
+in matrices
+```{r}
+m = matrix(1:4, 2, 2)
+m
+```
+in `data.frame`s
+```{r}
+d = data.frame(a, b = c("blue", "brown", "brown"), c = c(65, 77, 69.6))
+d
+```
+Such data has little meaning, because it is unclear what the variables
+refer to, and what the records refer to. A more descriptive way would be
+```{r}
+Patients = data.frame(PatientID = a, EyeColor = b, Weight_kg = c(65, 77, 69.6))
+Patients
+```
+where another table would be needed for the personal details related
+to `PatientID`.
+
+Note here that
+ * records (rows in the `data.frame`) correspond to objects (persons), 
+ * the variable `Weight_kg` has a [measurement unit](http://www.bipm.org/en/measurement-units/ "BIPM") encoded it its variable name
+
+The weight numbers
+```{r}
+Patients$Weight_kg
+```
+carry no information about their measurement unit, allowing for meaningless computations such
+as
+```{r}
+with(Patients, Weight_kg + PatientID)
+```
+
+
+
+## Temporal data in R
+
+## Spatial data in R
+
+### How far am I from home?
+```{r}
+options(geonamesUsername="edzer")
+library(geonames)
+pts = rbind(
+ LA = GNsearch(name = "Lancaster University", adminCode1 = "ENG")[c("lng", "lat")],
+ MS = GNsearch(name = "Münster")[1,c("lng", "lat")]
+)
+pts
+```
+It turns out that `pts` is still filled with character information, so we need to
+transform it into numeric:
+```{r}
+class(pts$lng)
+pts = sapply(pts, as.numeric)
+rownames(pts) = c("LA", "MS")
+pts
+```
+R has a function called `dist`, which computes (euclidian) distances in $\mathbb{R}^n$:
+```{r}
+dist(pts)
+```
+
+```{r}
+library(sp)
+pts = SpatialPoints(pts, CRS("+proj=longlat +datum=WGS84"))
+```
+
+```{r}
+library(geosphere)
+distHaversine(pts[1,],pts[2,])
+distGeo(pts[1,],pts[2,])
+spDists(pts)
+```
+
+## Spatiotemporal data in R
+

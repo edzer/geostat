@@ -1,4 +1,4 @@
 geostat
 =======
 
-geostat Bergen slides and material
+geostat-course (Bergen, Lancaster), WorldDailyMeteo course (Belgrade) slides and material

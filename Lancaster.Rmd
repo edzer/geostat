@@ -351,12 +351,11 @@ pts["MS"]
 
 If we add attributes to `pts`, e.g. by
 ```{r}
-pts$pop = c(299.708, 45.952)
-pts$area = c(302.9, 19.2)
+pts$pop = c(299.708, 45.952) # according to Wikipedia
+pts$area = c(302.9, 19.2) # I asked google
 pts
 ```
-we see that the class has changed from `SpatialPoints` to `SpatialPointsDataFrame`, the reason being that in addition to geometry (locations), the object now has a `data.frame` slot with attributes. We
-can deal with these attributes 
+we see that the class of `pts` now has changed from `SpatialPoints` to `SpatialPointsDataFrame`, the reason being that in addition to geometry (locations), the object now has attributes (in a `data.frame` slot). We can subset or manipulate these attributes in the same fashion as we can with plane `data.frame`s:
 ```{r}
 pts["pop"]
 pts[,"pop"]

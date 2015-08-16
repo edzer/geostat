@@ -69,9 +69,12 @@ with(Patients, EyeColor + Weight_kg)
 ```
 Take home messages:
 
-1. `data.frame` may change your information (character to `factor`)
+1. `data.frame` may change your information (convert character into `factor`), which
+is useful for some purposes (categorical variables, models), but not for others (DNA sequences).
 1. computations that are syntactically correct are not necessarily meaningful
 1. *never ever* ignore errors or warnings, but drill down into where they come from
+1. Records in a table (rows in a `data.frame`) often refer to *objects*, variables
+(columns) often to properties of these objects.
 
 Exercises
 
@@ -85,10 +88,28 @@ errors? (hint: `?options`)
 ## Temporal data in R
 
 ### How do we represent time?
-[ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) -
-Data elements and interchange formats – Information interchange – Representation of dates and times
+
+People communicate time by using words, which can be written down as character
+information. Phrases like *Sunday, 16 Aug 2015* and *18:36* are widely understood
+(although language dependent) to indicate date and time. Combined, we sometime see
+```{r}
+system("date > date.file")
+readLines("date.file")
+```
+There are actually a lot of different ways in which we can represent
+time information, and still understand it. For computers, this is less
+easy.
+
+### ISO 8601
+
+[ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) - *Data elements
+and interchange formats - Information interchange - Representation
+of dates and times* tries to create some order in this mess. It uses
+e.g. `2015-08-07` for Aug 7 2015, and `2015-08-07T18:30:27+00:00`
+to specify a given time and time zone on that date.
 
 ### Who knows what time it is? 
+
 Coordinated Universal Time
 [UTC](https://en.wikipedia.org/wiki/International_Organization_for_Standardization "UTC")
 ``It is, within about 1 second, mean solar time at 0 degree
@@ -102,11 +123,54 @@ to synchronize clocks.
 
 ### Does R know all this?
 
-Yes! To find out what time it is, R of
+Yes: 
+```{r}
+as.Date(.leap.seconds)
+```
+To find out what time it is, R of
 course relies on the system clock. The R [source
 code](https://stat.ethz.ch/pipermail/r-devel/2015-July/071472.html)
 is updated every time a leap second is announced. It is based on
 the code that operating systems use to handle date/time.
+
+### Representing time in R
+
+Although one could argue that time is represented by a real number
+($\mathbb{R}$), for the sequence
+```{r}
+c(55, 60, 65, 70)
+```
+it is not clear to which point in time we refer to. Are these
+years since 1900, or seconds since the start of Today? To fix this,
+one needs to set an offset and a unit.
+
+R has two built-in formats for this, `Date` and `POSIXt`:
+```{r}
+(d = Sys.Date())
+class(d)
+print(as.numeric(d), digits = 15)
+(t = Sys.time())
+class(t)
+print(as.numeric(t), digits = 15)
+```
+`Date` is stored as the (integer) number of days since 1970-01-01
+(in the local time zone), time is stored as the (fractional) number
+of seconds since 1970-01-01 00:00 UTC. We can see that time is *printed*
+in the current time zone.
+
+R also ``understands'' time differences, e.g.
+```{r}
+d - (d+1)
+d - (d+1.1)
+t - (t+24*3600)
+```
+
+### Time zones in R
+
+Time zones make it easy to understand whether it is day or night
+without asking where you are, and take care of daylight saving time.
+There is a [time zone database](https://www.iana.org/time-zones)
+and an [wikipedia entry](https://en.wikipedia.org/wiki/Tz_database).
 
 ## Spatial data in R
 

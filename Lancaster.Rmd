@@ -1,14 +1,14 @@
 ---
-title: "the Lancaster file"
+title: "Geostat 2015, Lancaster geostat-course.org slides"
 output:
   html_document:
     toc: true
     theme: united
 ---
 
-# Time, Space, Spacetime in R
+[CC-BY-SA](http://creativecommons.org/licenses/by-sa/4.0/), Edzer Pebesma 2015.
 
-Geostat-course 2015, Lancaster, summer school slides
+# Time, Space, Spacetime in R
 
 \(
 \newcommand{\E}{{\rm E}}       % E expectation operator
@@ -174,10 +174,9 @@ t - t+24*3600
 
 Exercise
 
-1. why do the last two expressions give a different result?
+1. why do the last two expressions print a different result?
 
-POSIXct is the numeric representation of time, POSIXlt represents time
-as a list (each time stamp one list), and can be used to isolate time
+`POSIXct` uses one double to representation a time instance, `POSIXlt` represents time as a list (each time stamp one list), and is convenient to isolate time
 components:
 ```{r}
 t
@@ -210,6 +209,7 @@ whereas in UTC,
 Sys.setenv(TZ="UTC")
 as.POSIXct("2015-03-30") - as.POSIXct("2015-03-29")
 as.POSIXct("2015-10-26") - as.POSIXct("2015-10-25")
+Sys.setenv(TZ="CET")
 ```
 having irregular intervals (day lengths) makes it complicated
 to compute daily means of e.g. hourly values; working with UTC
@@ -267,6 +267,22 @@ Several packages provide other ways of representing time; package [lubridate](ht
 
 The time series task view is complete here, but I will mention two important packages: [zoo](https://cran.uni-muenster.de/package=zoo) and [xts](https://cran.uni-muenster.de/package=xts).
 
+Zoo is for ordered observations, where the ordering does not *have* to be time:
+```{r}
+library(zoo)
+zoo(rnorm(10), 1:10)
+```
+it provides a lot of convenient functions, including `aggregate`, `na.fill`, and e.g. moving average filters. See for instance `?aggregate.zoo` for many examples aggregating time series to daily, monthly, quarterly or yearly values.
+
+Package xts builds on top of zoo (xts is a subclass of zoo), and requires that data are ordered by time. It allows for different time classes (e.g. `Date` and `POSIXct`) but works with `POSIXct` under the hood. xts adds very convenient ISO 8601 style time interval selection:
+```{r}
+library(xts)
+x = xts(1:365, as.Date("2015-01-01")+0:364)
+nrow(x)
+nrow(x["2015-05"]) # all days in May
+nrow(x["2015-05/06"]) # all days in May and June
+```
+
 ## Spatial data in R
 
 ### How far from home am I?
@@ -319,9 +335,46 @@ spDists(pts) # km, great circle distance over the WGS84 ellipsoid
 package [geosphere](https://cran.uni-muenster.de/package=geosphere) provides several alternative spherical/ellipsoidal distance measures:
 ```{r}
 library(geosphere)
-distHaversine(pts[1,],pts[2,])
-distGeo(pts[1,],pts[2,]) # different from spDist:
-spDists(pts)[2,1]*1000 - distGeo(pts[1,],pts[2,])  # difference in m
+distHaversine(pts[1],pts[2])
+distGeo(pts[1],pts[2]) # different from spDist:
+spDists(pts)[2,1]*1000 - distGeo(pts[1],pts[2])  # difference in m
+```
+
+### Subsetting sp objects
+as we have seen, a `SpatialPoints` object can be subsetted by its index, but
+also by its row name; `pts[1]` and `pts[1,]` yield the same:
+```{r}
+pts[1]
+pts[1,]
+pts["MS"]
+```
+
+If we add attributes to `pts`, e.g. by
+```{r}
+pts$pop = c(299.708, 45.952)
+pts$area = c(302.9, 19.2)
+pts
+```
+we see that the class has changed from `SpatialPoints` to `SpatialPointsDataFrame`, the reason being that in addition to geometry (locations), the object now has a `data.frame` slot with attributes. We
+can deal with these attributes 
+```{r}
+pts["pop"]
+pts[,"pop"]
+pts[["pop"]]
+pts$pop
+pts[1,"pop"]
+pts[1,]$pop
+(pts$popDensity = pts$pop / pts$area)
+```
+
+We can even select using the spatial predicate *intersect*, as in
+```{r}
+library(spacetime)
+data(air) # loads the boundary of Germany, called DE
+proj4string(DE) = proj4string(pts) # they are semantically identical, but syntactically different
+pts[DE,]
+plot(DE, axes = TRUE)
+points(pts[DE,], col = 'red', pch = 16)
 ```
 
 ## Spatiotemporal data in R

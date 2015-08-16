@@ -1,3 +1,11 @@
+---
+title: "the Lancaster file"
+output:
+  html_document:
+    toc: true
+    theme: united
+---
+
 # Time, Space, Spacetime in R
 
 Geostat-course 2015, Lancaster, summer school slides
@@ -44,51 +52,113 @@ The weight numbers
 ```{r}
 Patients$Weight_kg
 ```
-carry no information about their measurement unit, allowing for meaningless computations such
-as
+carry no information about their measurement unit, allowing for meaningless computations such as
 ```{r}
 with(Patients, Weight_kg + PatientID)
 ```
+The answer is correct, though, as `+` requires two numeric arguments. If we try to add
+eye color to body weight, we get a warning if `EyeColor` is a `factor` (by default,
+`data.frame` converts `character` vectors into `factor`s!),
+```{r}
+with(Patients, EyeColor + Weight_kg)
+```
+or in case `EyeColor` is `character`, we get an error:
+```{r}
+Patients$EyeColor = as.character(Patients$EyeColor)
+with(Patients, EyeColor + Weight_kg)
+```
+Take home messages:
 
+1. `data.frame` may change your information (character to `factor`)
+1. computations that are syntactically correct are not necessarily meaningful
+1. *never ever* ignore errors or warnings, but drill down into where they come from
 
+Exercises
+
+1. how can the `data.frame` command above be modified such that
+the character variable is not modified into a `factor`?
+1. how can R be configured such that this is always the case?
+1. in a long script, warnings are printed at the end. How can
+you make them print where they happen, or convert them into
+errors? (hint: `?options`)
 
 ## Temporal data in R
+
+### How do we represent time?
+[ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) -
+Data elements and interchange formats – Information interchange – Representation of dates and times
+
+### Who knows what time it is? 
+Coordinated Universal Time
+[UTC](https://en.wikipedia.org/wiki/International_Organization_for_Standardization "UTC")
+``It is, within about 1 second, mean solar time at 0 degree
+longitude; it does not observe daylight saving time.'' (formerly: GMT). It keeps track of
+the Earth's rotation and International Atomic Time ([TAI](https://en.wikipedia.org/wiki/International_Atomic_Time)), by introducing leap seconds [now
+and then](https://en.wikipedia.org/wiki/Leap_second).
+Real-time approximations to UTC are broadcasted wireless by GPS and
+radio time signals; computers usually use the [network time
+protocol](https://en.wikipedia.org/wiki/Network_Time_Protocol "NTP")
+to synchronize clocks.
+
+### Does R know all this?
+
+Yes! To find out what time it is, R of
+course relies on the system clock. The R [source
+code](https://stat.ethz.ch/pipermail/r-devel/2015-July/071472.html)
+is updated every time a leap second is announced. It is based on
+the code that operating systems use to handle date/time.
 
 ## Spatial data in R
 
 ### How far am I from home?
-```{r}
-options(geonamesUsername="edzer")
+[Geonames](http://www.geonames.org/) is a gazetteer
+(geographical dictionary or directory) that has a collection
+of place names, place types and geographical coordinates in
+[WGS84](https://en.wikipedia.org/wiki/World_Geodetic_System),
+along with several other things.
+
+You can register yourself at [geonames](http://www.geonames.org/login).
+```{r eval=FALSE}
+options(geonamesUsername = "edzer") # don't use my name!
 library(geonames)
 pts = rbind(
- LA = GNsearch(name = "Lancaster University", adminCode1 = "ENG")[c("lng", "lat")],
- MS = GNsearch(name = "Münster")[1,c("lng", "lat")]
-)
+ LA = GNsearch(name = "Lancaster University", adminCode1 = "ENG"),
+ MS = GNsearch(name = "Münster")[1,]
+)[c("lng", "lat")]
+```
+```{r echo=FALSE}
+load("pts.RData")
+```
+```{r}
 pts
 ```
-It turns out that `pts` is still filled with character information, so we need to
-transform it into numeric:
+
+It turns out that `pts` is still filled with character information, 
 ```{r}
 class(pts$lng)
-pts = sapply(pts, as.numeric)
-rownames(pts) = c("LA", "MS")
+```
+so we need to transform it into numeric:
+```{r}
+pts = sapply(pts, as.numeric) # this drops rownames, so:
+rownames(pts) = c("LA", "MS") # Lancaster, Muenster
 pts
 ```
 R has a function called `dist`, which computes (euclidian) distances in $\mathbb{R}^n$:
 ```{r}
 dist(pts)
 ```
-
+which returns `10.6`, but 10.6 what? Degrees? Nautical miles? Clearly, our data are
+not in planar space, so we need to be more clever. Package `sp` 
 ```{r}
 library(sp)
 pts = SpatialPoints(pts, CRS("+proj=longlat +datum=WGS84"))
+spDists(pts)
 ```
 
 ```{r}
 library(geosphere)
 distHaversine(pts[1,],pts[2,])
 distGeo(pts[1,],pts[2,])
-spDists(pts)
 ```
 
 ## Spatiotemporal data in R

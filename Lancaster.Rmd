@@ -10,13 +10,6 @@ output:
 
 # Time, Space, Spacetime in R
 
-\(
-\newcommand{\E}{{\rm E}}       % E expectation operator
-\newcommand{\Var}{{\rm Var}}   % Var variance operator
-\newcommand{\Cov}{{\rm Cov}}   % Cov covariance operator
-\newcommand{\Cor}{{\rm Corr}}
-\)
-
 ## Data in R
 Data in R are often organized in vectors,
 ```{r}
@@ -30,7 +23,7 @@ in matrices
 m = matrix(1:4, 2, 2)
 m
 ```
-in `data.frame`s
+or in `data.frame`s
 ```{r}
 d = data.frame(a, b = c("blue", "brown", "brown"), c = c(65, 77, 69.6))
 d
@@ -73,17 +66,31 @@ Take home messages:
 is useful for some purposes (categorical variables, models), but not for others (DNA sequences).
 1. computations that are syntactically correct are not necessarily meaningful
 1. *never ever* ignore errors or warnings, but drill down into where they come from
-1. Records in a table (rows in a `data.frame`) often refer to *objects*, variables
-(columns) often to properties of these objects.
+1. Records in a table (rows in a `data.frame`) often refer to *objects*, variables (columns) often to properties of these objects.
 
 Exercises
 
 1. how can the `data.frame` command above be modified such that
 the character variable is not modified into a `factor`?
-1. how can R be configured such that this is always the case?
-1. in a long script, warnings are printed at the end. How can
+2. how can R be configured such that this is always the case?
+3. in a long script, warnings are printed at the end. How can
 you make them print where they happen, or convert them into
 errors? (hint: `?options`)
+4. how is a `data.frame` related to a `list`?
+5. try to understand the following commands
+ * `d[1,]`
+ * `d[,1]`
+ * `d[,1,drop=FALSE]`
+ * `d[1,1]`
+ * `d[1,1,drop=FALSE]`
+ * `d[1]`
+ * `d["a"]`
+ * `d[["a"]]`
+ * `d$a`
+ * `d[,"a"]`
+ * `d[,c("a","b")]`
+ as you will see, the logic behind selection for spatial, temporal, and spatiotemporal objects follows this very closely. 
+6. `matrix` and `data.frame` both represent two-dimensional organisations of data; why don't we use `matrix` for everything?
 
 ## Temporal data in R
 
@@ -93,20 +100,28 @@ People communicate time by using words, which can be written down as character
 information. Phrases like *Sunday, 16 Aug 2015* and *18:36* are widely understood
 (although language dependent) to indicate date and time. Combined, we sometime see
 ```{r}
-system("date > date.file")
-readLines("date.file")
+system("date > date.file") # works on unix systems!
+readLines("date.file")     # read & print back in R
 ```
 There are actually a lot of different ways in which we can represent
 time information, and still understand it. For computers, this is less
-easy.
+easy:
+```{r}
+data(wind, package = "gstat")
+head(wind[,1:7])
+data(Produc, package = "plm")
+head(Produc[,1:6])
+library(foreign)
+read.dbf(system.file("shapes/sids.dbf", package="maptools"))[1:5,c(5,9:14)]
+```
 
 ### ISO 8601
 
-[ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) - *Data elements
+[ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) - <em>Data elements
 and interchange formats - Information interchange - Representation
-of dates and times* tries to create some order in this mess. It uses
+of dates and times</em> tries to create some order in this mess. It uses
 e.g. `2015-08-07` for Aug 7 2015, and `2015-08-07T18:30:27+00:00`
-to specify a given time and time zone on that date.
+to specify a given time in a particular time zone on that date.
 
 ISO 8601 implicitly defines time stamps to refer to
 time *intervals*: 2015-08-07 refers to the *full day* of Aug 7, i.e.
@@ -120,12 +135,7 @@ Coordinated Universal Time
 [UTC](https://en.wikipedia.org/wiki/International_Organization_for_Standardization "UTC")
 ``It is, within about 1 second, mean solar time at 0 degree
 longitude; it does not observe daylight saving time.'' (formerly: GMT). It keeps track of
-the Earth's rotation and International Atomic Time ([TAI](https://en.wikipedia.org/wiki/International_Atomic_Time)), by introducing leap seconds [now
-and then](https://en.wikipedia.org/wiki/Leap_second).
-Real-time approximations to UTC are broadcast wireless by GPS and
-radio time signals; computers usually use the [network time
-protocol](https://en.wikipedia.org/wiki/Network_Time_Protocol "NTP")
-to synchronize clocks.
+the Earth's rotation and International Atomic Time ([TAI](https://en.wikipedia.org/wiki/International_Atomic_Time)), by introducing leap seconds [now and then](https://en.wikipedia.org/wiki/Leap_second). Real-time approximations to UTC are broadcast wireless by GPS and radio time signals; computers usually use the [network time protocol](https://en.wikipedia.org/wiki/Network_Time_Protocol "NTP") to synchronize clocks.
 
 ### Does R know all this?
 
@@ -133,24 +143,17 @@ Kind of - for instance
 ```{r}
 as.Date(.leap.seconds)
 ```
-To find out what time it is, R of
-course relies on the system clock. The R [source
-code](https://stat.ethz.ch/pipermail/r-devel/2015-July/071472.html)
-is updated every time a leap second is announced. It is based on
-the code that operating systems use to handle date/time.
+To find out what time it is, R of course relies on the system clock. The R [source code](https://stat.ethz.ch/pipermail/r-devel/2015-July/071472.html) is updated every time a new leap second is announced. It is based on the code that operating systems use to handle date/time.
 
 ### Representing time in R
 
-Although one could argue that time is represented by a real number
-($\mathbb{R}$), for the sequence
+Although one could argue that time is represented by a real number ($\mathbb{R}$), for the sequence
 ```{r}
 c(55, 60, 65, 70)
 ```
-it is not clear to which point in time we refer to. Are these
-years since 1900, or seconds since the start of Today? To fix this,
-one needs to set an offset and a unit.
+it is not clear to which points in time we refer to: are these years since 1900, or seconds since the start of Today? To fix this, one needs to set an offset (when is zero?) and a unit (how long takes a unit increas?).
 
-R has two built-in formats for this, `Date` and `POSIXt`:
+R has two built-in formats: for date it has `Date`, for time `POSIXt`:
 ```{r}
 (d = Sys.Date())
 class(d)
@@ -159,10 +162,7 @@ print(as.numeric(d), digits = 15)
 class(t)
 print(as.numeric(t), digits = 15)
 ```
-`Date` is stored as the (integer) number of days since 1970-01-01
-(in the local time zone), time is stored as the (fractional) number
-of seconds since 1970-01-01 00:00 UTC. We can see that time is *printed*
-in the current time zone.
+`Date` is stored as the (integer) number of days since 1970-01-01 (in the local time zone), time is stored as the (fractional) number of seconds since 1970-01-01 00:00 UTC. We can see that time is *printed* in the current time zone.
 
 R also ``understands'' time differences, e.g.
 ```{r}
@@ -212,10 +212,11 @@ as.POSIXct("2015-10-26") - as.POSIXct("2015-10-25")
 Sys.setenv(TZ="CET")
 ```
 having irregular intervals (day lengths) makes it complicated
-to compute daily means of e.g. hourly values; working with UTC
+to compute daily means from e.g. hourly values; working with UTC
 may solve this problem. Climate scientists often model climate
 for years with 360 days, to get rid of the complexity of handling
-unequal month lengths and leap years. 
+unequal month lengths and leap years. Aligning such data with POSIX
+time would be fun!
 
 ### Reading time data into R
 
@@ -259,8 +260,7 @@ as.Date(365)
 
 ### Packages with tools to deal with time
 
-The CRAN [Time Series Analysis Task View](https://cran.uni-muenster.de/web/views/TimeSeries.html)
-describes all packages dealing with time, time series data, and its analysis.
+The CRAN [Time Series Analysis Task View](https://cran.uni-muenster.de/web/views/TimeSeries.html) describes all packages dealing with time, time series data, and its analysis.
 Several packages provide other ways of representing time; package [lubridate](https://cran.uni-muenster.de/web/packages/lubridate/index.html) for instance provides explicit representation of time intervals.
 
 ### Packages for analyzing time series data
@@ -294,7 +294,7 @@ along with several other things.
 
 You can register yourself at [geonames](http://www.geonames.org/login).
 ```{r eval=FALSE}
-options(geonamesUsername = "edzer") # don't use my name!
+options(geonamesUsername = "myUserName") # register, then use your own name
 library(geonames)
 pts = rbind(
  LA = GNsearch(name = "Lancaster University", adminCode1 = "ENG"),
@@ -325,7 +325,6 @@ dist(pts)
 which returns `10.6`, but 10.6 what? Degrees? Nautical miles? Oranges? No,
 plane nonsense, and `dist` is only useful for geographical coordinates (long/lat) in small areas close to the equator: our data are not in planar space, so we need to be more clever. 
 
-### Package sp
 Package `sp` provides classes for points, lines, polygons and grids which register their coordinate reference system (CRS), and chooses appropriate distance functions:
 ```{r}
 library(sp)
@@ -342,11 +341,11 @@ spDists(pts)[2,1]*1000 - distGeo(pts[1],pts[2])  # difference in m
 
 ### Subsetting sp objects
 as we have seen, a `SpatialPoints` object can be subsetted by its index, but
-also by its row name; `pts[1]` and `pts[1,]` yield the same:
+also by its row name; `pts[1]` and `pts[1,]` yield the same: we think of these geometry-only objects as having only records:
 ```{r}
-pts[1]
-pts[1,]
-pts["MS"]
+pts[1] # selects record 1, but looks ambiguous
+pts[1,] # looks less ambiguous
+pts["MS",]
 ```
 
 If we add attributes to `pts`, e.g. by
@@ -357,24 +356,308 @@ pts
 ```
 we see that the class of `pts` now has changed from `SpatialPoints` to `SpatialPointsDataFrame`, the reason being that in addition to geometry (locations), the object now has attributes (in a `data.frame` slot). We can subset or manipulate these attributes in the same fashion as we can with plane `data.frame`s:
 ```{r}
-pts["pop"]
-pts[,"pop"]
-pts[["pop"]]
-pts$pop
-pts[1,"pop"]
-pts[1,]$pop
-(pts$popDensity = pts$pop / pts$area)
+pts[1] # now selects a variable!
+pts[,1] # does the same, less ambiguous
+pts["pop"] # does the same, by name
+pts[,"pop"] # does the same
+pts[["pop"]] # extract vector
+pts$pop      # synonymous
+pts[1,"pop"] # select 1 geometry, 1 variable
+pts[1,]$pop  # select 1 geometry, extract variale
+(pts$popDensity = pts$pop / pts$area) # create & add new variable
 ```
 
 We can even select using the spatial predicate *intersect*, as in
 ```{r}
 library(spacetime)
 data(air) # loads the boundary of Germany, called DE
-proj4string(DE) = proj4string(pts) # they are semantically identical, but syntactically different
-pts[DE,]
+proj4string(DE) = proj4string(pts) # semantically identical, but syntactically different
+pts[DE,] # selects the point(s) in pts intersecting with polygon DE
 plot(DE, axes = TRUE)
 points(pts[DE,], col = 'red', pch = 16)
 ```
 
+Note that
+
+1. Coordinate reference systems (CRS) need to be defined in order to decide which distance metrics are meaningful, and whether objects can be meaningfully combined by comparing coordinates (e.g., `pts` and `DE`)
+1. `sp` objects register coordinate reference systems, and warn/err in case of  mismatch
+
+Exercises
+
+1. Create a login for geonames, and retrieve the coordinates of your home address, or else use some other gazetteer to retrieve those
+1. Compute how far away from home you currently are, using different distance metrics.
+
 ## Spatiotemporal data in R
 
+The [SpatioTempofal Task View](https://cran.uni-muenster.de/web/views/SpatioTemporal.html) describes the packages that represent and/or analyze spatiotemporal data available on CRAN.
+
+### How are spatiotemporal data organized in package spacetime?
+
+Essentially, spacetime distinguishes between three types of spatiotemporal data: 
+
+1. regular data where for fixed locations (or regions) observations are collected for the same time instances or intervals (e.g. socio-economic data or data from fixed sensors)
+2. irregular data for which observations are arbitrarily distributed in space-time
+3. trajectories, data for moving objects.
+
+Support for trajectories in package `spacetime` is rudimentary, and is more developed in package `trajectories` (see below)
+
+Irregular spacetime data are stored in `STI` objects, or `STIDF` if they have attributes (magnitude of an earth quake, cause of a disease):
+```{r}
+showClass("STI")
+```
+the `sp` and `time` slots need to have the same number of records, and are simply matched by order to identify the location and time of a particular event. A
+`data` slot of `STIDF` has the same number of records and is matched accordingly.
+
+Regular spacetime data have recurrent observations for fixed spatial entities. The `STF`, space-time-full, data structure represents this by
+```{r}
+showClass("STF")
+```
+Although the class structure seems identical, `sp` and `time` may have different number of records, and the assumption here is that every geometry record has a time series of data of length `nrow(time)`. The `data` slot of `STFDF` has `length(sp) * nrow(time)` records, space cycling fastest.
+
+A third type,  `STF` (space-time-sparse), defined as
+```{r}
+showClass("STS")
+```
+mimics `STF` but does not store all cell (space x time) values; it keeps an index vector to those cells that are filled, in order to be efficient for very sparse ST regular layouts.
+
+Note that
+
+1. the `sp` slot can contain any type of spatial data (points, lines, polygons, grid)
+2. time does not need to be regular, only the sequence of time points (or intervals) is identical for each space feature
+3. `endTime` can be used to define intervals; by default `STI` objects have zero interval width (indicating time instance), `STF` have interval length equal to the time to next observation (consecutive intervals).
+
+Quite often, regular or irregular data are aggregated to new spatial and/or temporal units. Package `spacetime` tries hard to accomodate all possibilities.
+
+### Analysis of regular spatiotemporal data (air quality sensor data)
+
+Package `spacetime` contains a dataset called `air`, which contains
+daily PM$_{10}$ values for rural air quality stations over Germany,
+from 1998-2009.
+```{r}
+library(sp)
+library(spacetime)
+data(air)
+rural = STFDF(stations, dates, data.frame(PM10 = as.vector(air)))
+dim(rural)
+stbox(rural)
+```
+
+We now aggregate the 2008 daily values to NUTS-1 region-average daily values by
+```{r}
+x = as(rural[,"2008"], "xts")
+apply(x, 1, mean, na.rm=TRUE)[1:5]
+dim(rural[,"2008"])
+x = aggregate(rural[,"2008"], DE_NUTS1, mean, na.rm=TRUE)
+dim(x)
+stplot(x, mode = "tp", par.strip.text = list(cex=.6))
+```
+
+We can aggregate to the complete region, by which the object becomes a `xts` object (unless we would specify `simplify=FALSE` in the call to `aggregate`):
+```{r}
+x = aggregate(rural[,"2008"], DE, mean, na.rm=TRUE)
+class(x)
+plot(x[,"PM10"])
+```
+
+Some stations contain only missing values for certain time periods; we 
+can de-select those, and aggregate to monthly means:
+```{r}
+x = as(rural[,"2008"], "xts")
+apply(x, 2, mean, na.rm=TRUE)[1:5]
+sel = which(!apply(as(rural[,"2008"], "xts"), 2, function(x) all(is.na(x))))
+x = aggregate(rural[sel, "2008"], "month", mean, na.rm=TRUE)
+stplot(x, mode = "tp", par.strip.text = list(cex=.6))
+```
+
+Next, we use `zoo::as.yearqtr` to aggregate to quarterly values:
+```{r}
+library(zoo)
+x = aggregate(rural[sel,"2005::2011"], as.yearqtr, median, na.rm=TRUE)
+stplot(x, mode = "tp", par.strip.text = list(cex=.6))
+```
+
+Finally, we compute a yearly mean values for 2008 and 2009, for the whole
+country:
+```{r}
+DE.years = STF(DE, as.Date(c("2008-01-01", "2009-01-01")))
+aggregate(rural[,"2008::2009"], DE.years, mean, na.rm=TRUE)
+```
+
+We can do some space-time geostatistics on these data, e.g. by
+
+```{r}
+rr = rural[,"2005::2010"]
+unsel = which(apply(as(rr, "xts"), 2, function(x) all(is.na(x))))
+r5to10 = rr[-unsel,] # remove series that are empty for this time period
+summary(r5to10)
+dim(r5to10)
+rn = row.names(r5to10@sp)[4:7]
+rn
+```
+
+To keep computation time in bounds, we select 100 random time instances, `rbind` the `Spatial` objects, and compute a pooled (pure spatial) variogram:
+```{r}
+rs = sample(dim(r5to10)[2], 100)
+lst = lapply(rs, function(i) { x = r5to10[,i]; x$ti = i; x} )
+pts = do.call(rbind, lst)
+library(gstat)
+v = variogram(PM10~ti, pts[!is.na(pts$PM10),], dX=0)
+vmod = fit.variogram(v, vgm(1, "Exp", 200, 1))
+plot(v, vmod)
+vmod
+```
+
+The full, pre-computed space-time variogram is obtained by
+```{r eval=FALSE}
+rr = rural[,"2005::2010"]
+unsel = which(apply(as(rr, "xts"), 2, function(x) all(is.na(x))))
+r5to10 = rr[-unsel,]
+vv = variogram(PM10~1, r5to10, width=20, cutoff = 200, tlags=0:5)
+```
+
+but we will load pre-computed values from package gstat:
+```{r}
+data(vv, package = "gstat")
+vv <- vv[c("np", "dist", "gamma", "id", "timelag", "spacelag")]
+```
+
+The following two graphs first show a variogram map in space (x) and time (y), and then a set of spatial variograms where color denotes the time lag:
+```{r}
+print(plot(vv), split = c(1,1,1,2), more = TRUE)
+print(plot(vv, map = FALSE), split = c(1,2,1,2))
+```
+
+We see that lag(spatial lag = 0, time lag = 0) is always missing, which is typical for regular data without replicates.
+
+We can fit a metric variogram model to these data by
+```{r}
+metricVgm <- vgmST("metric",
+                   joint=vgm(50,"Exp",100,0),
+                   stAni=50)
+metricVgm <- fit.StVariogram(vv, metricVgm)
+attr(metricVgm, "optim")$value
+plot(vv, metricVgm)
+```
+
+or a separable model by
+```{r}
+sepVgm <- vgmST("separable",
+                space=vgm(0.9,"Exp", 123, 0.1),
+                time =vgm(0.9,"Exp", 2.9, 0.1),
+                sill=100)
+sepVgm <- fit.StVariogram(vv, sepVgm, method = "L-BFGS-B",
+                          lower = c(10,0,0.01,0,1),
+                          upper = c(500,1,20,1,200))
+attr(sepVgm, "optim")$value
+plot(vv, list(sepVgm, metricVgm))
+```
+
+These models can then be used for spatiotemporal kriging; the
+interested reader is refered to vignettes of package `gstat`, and
+examples and demo scripts using the function `krigeST` found there.
+
+### Analysis of events (ST point pattern data)
+
+we'll analyse the events from the foot-and-mouth (fmd) disease data that come with the [stpp](https://cran.uni-muenster.de/package=stpp) package:
+```{r}
+library(stpp)
+data("fmd")
+data("northcumbria")
+head(fmd)
+head(northcumbria)
+```
+To make the northcumbria polygon more useful, we'll convert it into a `SpatialPolygons` object by
+```{r}
+nc = rbind(northcumbria, northcumbria[1,]) # close polygon
+library(sp)
+nc = SpatialPolygons(list(Polygons(list(Polygon(nc)), "NC")))
+```
+Next, we'll creat a `SpatialPoints` object for the locations
+```{r}
+pts = SpatialPoints(fmd[,1:2])     # CRS unknown!
+plot(nc, axes = TRUE)
+plot(pts, cex = 0.5, add = TRUE, col = "#88888888")
+```
+
+We can do some simple cell counts by creating a grid first
+```{r}
+grd = SpatialPixels(SpatialPoints(makegrid(nc, n = 100)))
+plot(grd)
+plot(nc, add = TRUE)
+```
+
+and then assigning a dummy (1) attribute, and aggregating this using `sum`:
+```{r}
+pts$id = rep(1, length(pts))
+image(aggregate(pts, grd, sum))
+plot(nc, add = TRUE)
+points(pts, cex = .3, col = "#88888888")
+title("cell counts")
+```
+
+and get an idea of the temporal development by computing average event *time* per cell
+```{r}
+day = as.Date("2001-01-01") + fmd[,3] # also unknown!
+pts$day = day
+image(aggregate(pts["day"], grd, mean))
+plot(nc, add = TRUE)
+points(pts, cex = .3, col = "#88888888")
+title("cell mean event time")
+```
+
+We can create an irregular space-time object (`STI`) from this, without attributes (DF), by
+```{r}
+library(spacetime)
+sti = STI(pts, day)
+plot(sti) # space-time layout
+```
+
+This plot shows the space-time (time=x, space=y) layout of the
+individual events, where points are simply numbered.  Note that `STI` objects
+are *always* time ordered.
+
+We can create a plot that shows attributes if we add an attribute; here we add
+a simple index, normalized to $[0,1]$, to indicate temporal distribution.
+```{r}
+stidf = STIDF(pts, day, data.frame(one = (0:(length(pts)-1))/(length(pts)-1)))
+stplot(stidf, sp.layout = nc, key.space = "right", cex = .5,
+	xlim = bbox(nc)[1,], ylim = bbox(nc)[2,],
+	main = "colour indicates quintile")
+```
+
+A variety of the number of observations per grid cell per time interval
+is obtained by aggregating `stidf` by a regular space-time grid; we create
+this grid by
+```{r}
+grd = SpatialPixels(SpatialPoints(makegrid(nc, n = 25)))
+n = 6 # number of time classes
+tcuts = seq(min(index(sti)), max(index(sti)), length.out=n)
+grd = STF(grd, tcuts[1:(n-1)])
+plot(grd)
+```
+
+`STF` creates end times of the time intervals by default by
+```{r}
+Sys.setenv(TZ = "UTC")
+delta(tcuts[1:(n-1)])
+```
+The number of events per space-time blocks is then computed by
+`aggregate`, and plotted with `stplot`:
+```{r}
+a = aggregate(stidf, grd, sum)
+summary(a)
+stplot(a, xlim = bbox(nc)[1,], ylim = bbox(nc)[2,], 
+	col.regions=gray((45:1)/51), sp.layout = list(nc, first=FALSE),
+	main = "number of observations")
+```
+
+### Moving objects
+
+A third type of spatiotemporal data concerns trajectories, describing the paths of objects moving through space.  Data consists of sequences of fixes, time-stamped locations measurements. Methods for data analysis have been developed by very different communities, ranging from the transportation and logistics sector to animal ecology. Problems addressed include
+
+1. modelling movement from sample data
+1. home range estimation
+1. predicting behaviour of individuals, or arrival times
+1. studying group behaviour and interactions
+
+Package [trajectories](https://cran.uni-muenster.de/package=trajectories) provides classes and some methods for handling and analysing such data, building upon the work in packages sp and spacetime.

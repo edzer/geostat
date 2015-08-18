@@ -10,6 +10,40 @@ output:
 
 # Time, Space, Spacetime in R
 
+## Package requirements
+
+The packages used in this course are as follows:
+
+```{r}
+pkgs <- c(
+  "sp", # foundational spatial package
+  "spacetime", # core spacetime classes and methods
+  "stpp", # space-time point pattern simulation
+  "foreign", # for loading data
+  "plm", # time series for panel data
+  "zoo", # for time-series analysis
+  "xts", # extensible time series analysis
+  "geonames", # query the geonames api
+  "geosphere", # for plotting on geographic coordinates
+  "gstat" # geostatistics
+)
+```
+
+It is likely you will need to install some of these on your computer.
+To find out which ones need to be loaded we can as R, using `require()`.
+
+```{r}
+# Which packages are already installed?
+reqs <- vapply(pkgs, require, character.only = TRUE, FUN.VALUE = logical(1))
+
+# Install the ones that are needed
+if(!all(reqs)){
+  install.packages(pkgs[!reqs])
+}
+```
+
+
+
 ## Data in R
 Data in R are often organized in vectors,
 ```{r}
@@ -335,8 +369,8 @@ package [geosphere](https://cran.uni-muenster.de/package=geosphere) provides sev
 ```{r}
 library(geosphere)
 distHaversine(pts[1],pts[2])
-distGeo(pts[1],pts[2]) # different from spDist:
-spDists(pts)[2,1]*1000 - distGeo(pts[1],pts[2])  # difference in m
+# distGeo(pts[1],pts[2]) # different from spDist: # commented out - bug in geosphere?
+spDists(pts)[2,1]*1000 - distHaversine(pts[1],pts[2])  # difference in m
 ```
 
 ### Subsetting sp objects
@@ -370,16 +404,16 @@ pts[1,]$pop  # select 1 geometry, extract variale
 We can even select using the spatial predicate *intersect*, as in
 ```{r}
 library(spacetime)
-data(air) # loads the boundary of Germany, called DE
-proj4string(DE) = proj4string(pts) # semantically identical, but syntactically different
-pts[DE,] # selects the point(s) in pts intersecting with polygon DE
-plot(DE, axes = TRUE)
-points(pts[DE,], col = 'red', pch = 16)
+data(air) # loads the boundary of Germany, called DE_NUTS1
+proj4string(DE_NUTS1) = proj4string(pts) # semantically identical, but syntactically different
+pts[DE_NUTS1,] # selects the point(s) in pts intersecting with polygon DE_NUTS1
+plot(DE_NUTS1, axes = TRUE)
+points(pts[DE_NUTS1,], col = 'red', pch = 16)
 ```
 
 Note that
 
-1. Coordinate reference systems (CRS) need to be defined in order to decide which distance metrics are meaningful, and whether objects can be meaningfully combined by comparing coordinates (e.g., `pts` and `DE`)
+1. Coordinate reference systems (CRS) need to be defined in order to decide which distance metrics are meaningful, and whether objects can be meaningfully combined by comparing coordinates (e.g., `pts` and `DE_NUTS1`)
 1. `sp` objects register coordinate reference systems, and warn/err in case of  mismatch
 
 Exercises
@@ -437,9 +471,9 @@ from 1998-2009.
 library(sp)
 library(spacetime)
 data(air)
-rural = STFDF(stations, dates, data.frame(PM10 = as.vector(air)))
+# rural = STFDF(stations, dates, data.frame(PM10 = as.vector(air))) # stations not there!
 dim(rural)
-stbox(rural)
+# stbox(rural) # commented for now: Error: object 'stbox' not found
 ```
 
 We now aggregate the 2008 daily values to NUTS-1 region-average daily values by
@@ -454,7 +488,7 @@ stplot(x, mode = "tp", par.strip.text = list(cex=.6))
 
 We can aggregate to the complete region, by which the object becomes a `xts` object (unless we would specify `simplify=FALSE` in the call to `aggregate`):
 ```{r}
-x = aggregate(rural[,"2008"], DE, mean, na.rm=TRUE)
+x = aggregate(rural[,"2008"], DE_NUTS1, mean, na.rm=TRUE)
 class(x)
 plot(x[,"PM10"])
 ```
@@ -479,8 +513,8 @@ stplot(x, mode = "tp", par.strip.text = list(cex=.6))
 Finally, we compute a yearly mean values for 2008 and 2009, for the whole
 country:
 ```{r}
-DE.years = STF(DE, as.Date(c("2008-01-01", "2009-01-01")))
-aggregate(rural[,"2008::2009"], DE.years, mean, na.rm=TRUE)
+DE.years = STF(DE_NUTS1, as.Date(c("2008-01-01", "2009-01-01")))
+x_subset <- aggregate(rural[,"2008::2009"], DE.years, mean, na.rm=TRUE)
 ```
 
 We can do some space-time geostatistics on these data, e.g. by
@@ -541,15 +575,16 @@ plot(vv, metricVgm)
 
 or a separable model by
 ```{r}
-sepVgm <- vgmST("separable",
-                space=vgm(0.9,"Exp", 123, 0.1),
-                time =vgm(0.9,"Exp", 2.9, 0.1),
-                sill=100)
-sepVgm <- fit.StVariogram(vv, sepVgm, method = "L-BFGS-B",
-                          lower = c(10,0,0.01,0,1),
-                          upper = c(500,1,20,1,200))
-attr(sepVgm, "optim")$value
-plot(vv, list(sepVgm, metricVgm))
+# commented - get error "Error in switch(model$stModel,...: EXPR must be a length 1 vector ...)"
+# sepVgm <- vgmST("separable",
+#                 space=vgm(0.9,"Exp", 123, 0.1),
+#                 time =vgm(0.9,"Exp", 2.9, 0.1),
+#                 sill=100)
+# sepVgm <- fit.StVariogram(vv, sepVgm, method = "L-BFGS-B",
+#                           lower = c(10,0,0.01,0,1),
+#                           upper = c(500,1,20,1,200))
+# attr(sepVgm, "optim")$value
+# plot(vv, list(sepVgm, metricVgm))
 ```
 
 These models can then be used for spatiotemporal kriging; the
@@ -644,11 +679,12 @@ delta(tcuts[1:(n-1)])
 The number of events per space-time blocks is then computed by
 `aggregate`, and plotted with `stplot`:
 ```{r}
-a = aggregate(stidf, grd, sum)
-summary(a)
-stplot(a, xlim = bbox(nc)[1,], ylim = bbox(nc)[2,], 
-	col.regions=gray((45:1)/51), sp.layout = list(nc, first=FALSE),
-	main = "number of observations")
+# commented due to error flagged: "Error in over(ax(x, "STI") ..."
+# a = aggregate(stidf, grd, sum)
+# summary(a)
+# stplot(a, xlim = bbox(nc)[1,], ylim = bbox(nc)[2,], 
+# 	col.regions=gray((45:1)/51), sp.layout = list(nc, first=FALSE),
+# 	main = "number of observations")
 ```
 
 ### Moving objects

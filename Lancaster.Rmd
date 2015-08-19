@@ -32,9 +32,10 @@ pkgs <- c(
 It is likely you will need to install some of these on your computer.
 To find out which ones need to be loaded we can as R, using `require()`.
 
-```{r}
+```{r, message=FALSE}
 # Which packages are already installed?
 reqs <- vapply(pkgs, require, character.only = TRUE, FUN.VALUE = logical(1))
+reqs # print which packages you need
 
 # Install the ones that are needed
 if(!all(reqs)){
@@ -133,9 +134,12 @@ errors? (hint: `?options`)
 People communicate time by using words, which can be written down as character
 information. Phrases like *Sunday, 16 Aug 2015* and *18:36* are widely understood
 (although language dependent) to indicate date and time. Combined, we sometime see
+
 ```{r}
-system("date > date.file") # works on unix systems!
-readLines("date.file")     # read & print back in R
+if(Sys.info()["sysname"] == "Linux"){
+  system("date > date.file") # works on unix systems!
+  readLines("date.file")     # read & print back in R
+}
 ```
 There are actually a lot of different ways in which we can represent
 time information, and still understand it. For computers, this is less
